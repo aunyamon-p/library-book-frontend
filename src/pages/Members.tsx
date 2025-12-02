@@ -52,12 +52,12 @@ export default function Members() {
   const handleSave = async (memberData: any) => {
     try {
       if (selectedMember) {
-        // update
+      
         const updated = await updateMember(selectedMember.user_id, memberData);
         setMembers(members.map((m) => (m.user_id === selectedMember.user_id ? updated : m)));
         toast.success("Member updated successfully");
       } else {
-        // add
+        
         const newMember = await addMember(memberData);
         setMembers([...members, newMember]);
         toast.success("Member added successfully");
@@ -109,28 +109,28 @@ export default function Members() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="pb-3 text-left text-sm font-medium text-muted-foreground">ID</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Name</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Email</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Phone</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Borrow Limit</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Date Registered</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Status</th>
-                  <th className="pb-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
+              <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Name</th>
+              <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Email</th>
+              <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Phone</th>
+              <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Borrow Limit</th>
+              <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Date Registered</th>
+              <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Status</th>
+              <th className="pb-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
+            </tr>
+          </thead>
               <tbody>
                 {filteredMembers.map((member) => (
                   <tr key={member.user_id} className="border-b border-border last:border-0">
-                    <td className="py-3 text-sm text-foreground">{member.user_id}</td>
-                    <td className="py-3 text-sm font-medium text-foreground">{member.name}</td>
-                    <td className="py-3 text-sm text-muted-foreground">{member.email}</td>
-                    <td className="py-3 text-sm text-muted-foreground">{member.phone}</td>
-                    <td className="py-3 text-sm text-muted-foreground">{member.borrowlimit}</td>
-                    <td className="py-3 text-sm text-muted-foreground">{new Date(member.date_registered).toLocaleDateString()}</td>
-                    <td className="py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                          member.status === "active"
+                <td className="py-3 text-sm text-foreground">{member.user_id}</td>
+                <td className="py-3 text-sm font-medium text-foreground">{member.name}</td>
+                <td className="py-3 text-sm text-muted-foreground">{member.email}</td>
+                <td className="py-3 text-sm text-muted-foreground">{member.phone}</td>
+                <td className="py-3 text-sm text-muted-foreground">{member.borrowlimit}</td>
+                <td className="py-3 text-sm text-muted-foreground">{new Date(member.date_registered).toLocaleDateString()}</td>
+                <td className="py-3">
+                  <span
+                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                      member.status === "active"
                             ? "bg-accent text-accent-foreground"
                             : "bg-destructive/10 text-destructive"
                         }`}

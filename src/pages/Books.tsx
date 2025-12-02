@@ -124,7 +124,6 @@ export default function Books() {
                   <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Publisher</th>
                   <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Year</th>
                   <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Shelf</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Amount</th>
                   <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Category</th>
                   <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Status</th>
                   <th className="pb-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
@@ -139,7 +138,6 @@ export default function Books() {
                     <td className="py-3 text-sm text-foreground">{book.publisher}</td>
                     <td className="py-3 text-sm text-foreground">{book.publish_year}</td>
                     <td className="py-3 text-sm text-foreground">{book.shelf}</td>
-                    <td className="py-3 text-sm text-foreground">{book.amount}</td>
                     <td className="py-3 text-sm text-foreground">{book.category_name}</td>
                     <td className="py-3 text-sm text-foreground">{book.status}</td>
                     <td className="py-3 text-right">

@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2 } from "lucide-react";
+import { Trash2 , Plus, AlignLeft } from "lucide-react";
 import { toast } from "sonner";
-import { getBorrows, updateBorrow, deleteBorrow } from "@/api/api";
+import { getBorrows, deleteBorrow, addBorrow, addReturn, getAdmins } from "@/api/api";
+import { BorrowModal } from "./../components/modals/BorrowModal";
 
 export default function BorrowReturn() {
   const [records, setRecords] = useState<any[]>([]);
+  const [openId, setOpenId] = useState<number | null>(null);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editRecord, setEditRecord] = useState<any | null>(null);
+  const [admins, setAdmins] = useState<any[]>([]);
 
   useEffect(() => {
     fetchRecords();
+    fetchAdmins();
   }, []);
 
   const fetchRecords = async () => {
@@ -17,105 +24,175 @@ export default function BorrowReturn() {
       const data = await getBorrows();
       setRecords(data);
     } catch (err) {
-      console.error(err);
       toast.error("Failed to load borrow records");
     }
   };
 
-  const handleReturn = async (borrowId: number) => {
+  const fetchAdmins = async () => {
     try {
-      const record = records.find(r => r.borrow_id === borrowId);
-      if (!record) return;
-
-      const updated = await updateBorrow(borrowId, {
-        ...record,
-        status: "returned",
-        due_date: new Date().toISOString() // หรือ field สำหรับ return date
-      });
-
-      setRecords(records.map(r => r.borrow_id === borrowId ? updated : r));
-      toast.success("Book returned successfully");
+      const data = await getAdmins();
+      setAdmins(data);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch admins", err);
+    }
+  };
+
+  const handleReturnBook = async (borrowId: number, book: any) => {
+    try {
+      const returnDate = new Date();
+      const dueDate = new Date(book.due_date);
+
+      const lateDays = Math.max(
+        0,
+        Math.ceil((returnDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+      );
+
+      const fine = lateDays * 5;
+      const status = lateDays > 0 ? "Late" : "OnTime";
+
+      const payload = {
+        totalfine: fine,
+        processed_by: 1,
+        items: [
+          {
+            return_id: 0,
+            borrow_id: borrowId,
+            book_id: book.book_id,
+            return_date: returnDate.toISOString(),
+            fine: fine,
+            status: status,
+          },
+        ],
+      };
+
+      await addReturn(payload);
+
+      toast.success(
+        `Book "${book.book_name}" returned successfully (${status}${
+          fine > 0 ? `, Fine: ${fine}฿` : ""
+        })`
+      );
+      fetchRecords();
+    } catch (error) {
+      console.error(error);
       toast.error("Failed to return book");
     }
   };
 
+  const handleSave = async (data: any) => {
+    try {
+      await addBorrow(data);
+      toast.success("Borrow record created");
+      setIsModalOpen(false);
+      fetchRecords();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save");
+    }
+  };
+
   const handleDelete = async (borrowId: number) => {
-    if (!confirm("Are you sure you want to delete this record?")) return;
+    if (!confirm("Are you sure?")) return;
     try {
       await deleteBorrow(borrowId);
       setRecords(records.filter(r => r.borrow_id !== borrowId));
       toast.success("Record deleted successfully");
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Failed to delete record");
     }
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Borrow & Return</h1>
-        <p className="text-sm text-muted-foreground">Manage book borrowing and returns</p>
+      <BorrowModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+        borrow={editRecord}
+      />
+
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Borrow & Return</h1>
+
+        <Button
+          onClick={() => {
+            setEditRecord(null);
+            setIsModalOpen(true);
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add Borrow Record
+        </Button>
       </div>
 
-      <Card className="shadow-custom">
-        <CardHeader>
-          <CardTitle>Borrow Records</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Borrow ID</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Member Name</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Book Name</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Borrow Date</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Due Date</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Status</th>
-                  <th className="pb-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records.map(record => (
-                  <tr key={record.borrow_id} className="border-b border-border last:border-0">
-                    <td className="py-3 text-sm text-foreground">BRW{String(record.borrow_id).padStart(3, "0")}</td>
-                    <td className="py-3 text-sm font-medium text-foreground">{record.member_name}</td>
-                    <td className="py-3 text-sm text-foreground">{record.book_name}</td>
-                    <td className="py-3 text-sm text-muted-foreground">{record.borrow_date.split("T")[0]}</td>
-                    <td className="py-3 text-sm text-muted-foreground">{record.due_date.split("T")[0]}</td>
-                    <td className="py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                          record.status === "borrowed"
-                            ? "bg-accent text-accent-foreground"
-                            : "bg-secondary text-secondary-foreground"
-                        }`}
-                      >
-                        {record.status}
-                      </span>
-                    </td>
-                    <td className="py-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        {record.status === "borrowed" && (
-                          <Button variant="outline" size="sm" onClick={() => handleReturn(record.borrow_id)}>
+      {records.map(record => (
+        <Card key={record.borrow_id} className="shadow-custom">
+          <CardHeader
+            onClick={() => setOpenId(openId === record.borrow_id ? null : record.borrow_id)}
+            className="cursor-pointer"
+          >
+            <CardTitle>
+              BRW{String(record.borrow_id).padStart(3, "0")} — {record.member_name}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Borrow Date: {record.borrow_date.split("T")[0]} | Books: {record.books.length}
+            </p>
+          </CardHeader>
+
+          {openId === record.borrow_id && (
+            <CardContent>
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left">
+                    <th>Book Name</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {record.books.map(book => (
+                    <tr key={book.book_id}>
+                      <td>{book.book_name}</td>
+                      <td>{book.due_date.split("T")[0]}</td>
+                      <td>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            book.status === "borrowed"
+                              ? "bg-accent"
+                              : book.status === "Late"
+                              ? "bg-red-500 text-white"
+                              : "bg-green-500 text-white"
+                          }`}
+                        >
+                          {book.status}
+                        </span>
+                      </td>
+                      <td className="text-left">
+                        {book.status === "borrowed" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReturnBook(record.borrow_id, book)}
+                          >
                             Return Book
                           </Button>
                         )}
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(record.borrow_id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="text-right mt-3 ">
+                <Button variant="destructive" onClick={() => handleDelete(record.borrow_id)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      ))}
     </div>
   );
 }

@@ -9,6 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { getMembers, getBooks, getAdmins } from "@/api/api"; // <-- ดึง getAdmins
 
 interface BorrowModalProps {
   isOpen: boolean;
@@ -20,114 +22,182 @@ interface BorrowModalProps {
 export function BorrowModal({ isOpen, onClose, onSave, borrow }: BorrowModalProps) {
   const [formData, setFormData] = useState({
     user_id: "",
-    book_id: "",
     borrow_date: new Date().toISOString().split("T")[0],
-    due_date: "",
     amount: 1,
     recorded_by: "",
+    books: [
+      {
+        book_id: "",
+        due_date: new Date().toISOString().split("T")[0],
+      },
+    ],
   });
+
+  const [members, setMembers] = useState<any[]>([]);
+  const [booksList, setBooksList] = useState<any[]>([]);
+  const [admins, setAdmins] = useState<any[]>([]); // <-- state สำหรับ admin
+
+  // ดึงสมาชิก, หนังสือ, admin
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const mems = await getMembers();
+        const books = await getBooks();
+        const adms = await getAdmins(); // <-- ดึง admin
+        setMembers(mems);
+        setBooksList(books);
+        setAdmins(adms);
+      } catch (err) {
+        console.error("Failed to fetch members, books or admins", err);
+      }
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (borrow) {
       setFormData({
         user_id: borrow.user_id,
-        book_id: borrow.book_id,
         borrow_date: borrow.borrow_date?.split("T")[0],
-        due_date: borrow.due_date?.split("T")[0],
         amount: borrow.amount,
         recorded_by: borrow.recorded_by,
-      });
-    } else {
-      setFormData({
-        user_id: "",
-        book_id: "",
-        borrow_date: new Date().toISOString().split("T")[0],
-        due_date: "",
-        amount: 1,
-        recorded_by: "",
+        books: borrow.books.map((b: any) => ({
+          book_id: b.book_id,
+          due_date: b.due_date.split("T")[0],
+        })),
       });
     }
-  }, [borrow, isOpen]);
+  }, [borrow]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
   };
 
+  const handleBookChange = (idx: number, key: string, value: string) => {
+    const updated = [...formData.books];
+    updated[idx][key] = value;
+    setFormData({ ...formData, books: updated });
+  };
+
+  const addBookRow = () => {
+    setFormData({
+      ...formData,
+      books: [
+        ...formData.books,
+        { book_id: "", due_date: new Date().toISOString().split("T")[0] },
+      ],
+    });
+  };
+
+  const removeBookRow = (idx: number) => {
+    setFormData({
+      ...formData,
+      books: formData.books.filter((_, i) => i !== idx),
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>{borrow ? "Edit Borrow" : "Add Borrow"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
+            <Label>Member</Label>
+            <Select
+              value={formData.user_id}
+              onValueChange={(val) => setFormData({ ...formData, user_id: val })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a member" />
+              </SelectTrigger>
+              <SelectContent>
+                {members.map((m) => (
+                  <SelectItem key={m.user_id} value={String(m.user_id)}>
+                    {m.user_id} — {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>User ID</Label>
-                <Input
-                  value={formData.user_id}
-                  onChange={(e) =>
-                    setFormData({ ...formData, user_id: e.target.value })
-                  }
-                  required
-                />
+            <Label>Recorded By (Admin)</Label>
+            <Select
+              value={formData.recorded_by}
+              onValueChange={(val) => setFormData({ ...formData, recorded_by: val })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select admin" />
+              </SelectTrigger>
+              <SelectContent>
+                {admins.map((a) => (
+                  <SelectItem key={a.admin_id} value={String(a.admin_id)}>
+                    {a.admin_id} — {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Label>Borrow Date</Label>
+            <Input
+              type="date"
+              value={formData.borrow_date}
+              onChange={(e) =>
+                setFormData({ ...formData, borrow_date: e.target.value })
+              }
+              required
+            />
+
+            {formData.books.map((book, idx) => (
+              <div key={idx} className="grid grid-cols-3 gap-4 items-end">
+                <div>
+                  <Label>Book</Label>
+                  <Select
+                    value={book.book_id}
+                    onValueChange={(val) => handleBookChange(idx, "book_id", val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a book" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {booksList.map((b) => (
+                        <SelectItem key={b.book_id} value={String(b.book_id)}>
+                          {b.book_id} — {b.book_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Due Date</Label>
+                  <Input
+                    type="date"
+                    value={book.due_date}
+                    onChange={(e) => handleBookChange(idx, "due_date", e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  {idx === 0 ? (
+                    <Button type="button" onClick={addBookRow}>
+                      + Add
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="destructive" onClick={() => removeBookRow(idx)}>
+                      Remove
+                    </Button>
+                  )}
+                </div>
               </div>
-
-              <div className="space-y-2">
-                <Label>Book ID</Label>
-                <Input
-                  value={formData.book_id}
-                  onChange={(e) =>
-                    setFormData({ ...formData, book_id: e.target.value })
-                  }
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Borrow Date</Label>
-                <Input
-                  type="date"
-                  value={formData.borrow_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, borrow_date: e.target.value })
-                  }
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Due Date</Label>
-                <Input
-                  type="date"
-                  value={formData.due_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, due_date: e.target.value })
-                  }
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Recorded By</Label>
-              <Input
-                value={formData.recorded_by}
-                onChange={(e) =>
-                  setFormData({ ...formData, recorded_by: e.target.value })
-                }
-                required
-              />
-            </div>
+            ))}
           </div>
 
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={onClose}>
+            <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit">

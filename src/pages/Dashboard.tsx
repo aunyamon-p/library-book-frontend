@@ -37,8 +37,7 @@ export default function Dashboard() {
   const fetchRecentBorrows = async () => {
     try {
       const borrows = await getBorrows();
-      setRecentBorrows(borrows.slice(-5).reverse()); // last 5 records
-      // ตัวอย่างสร้าง chart data แบบง่าย: จำนวน borrow/return ต่อเดือน
+      setRecentBorrows(borrows.slice(-5).reverse()); 
       const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       const chartMap: any = {};
       borrows.forEach((b) => {
@@ -102,50 +101,6 @@ export default function Dashboard() {
               <Bar dataKey="returned" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-custom">
-        <CardHeader>
-          <CardTitle>Recent Borrow Records</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">ID</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Member</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Book</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Date</th>
-                  <th className="pb-3 text-left text-sm font-medium text-muted-foreground">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentBorrows.map((record) => (
-                  <tr key={record.borrow_id} className="border-b border-border last:border-0">
-                    <td className="py-3 text-sm text-foreground">BRW{String(record.borrow_id).padStart(3, "0")}</td>
-                    <td className="py-3 text-sm text-foreground">{record.member_name}</td>
-                    <td className="py-3 text-sm text-foreground">{record.book_name}</td>
-                    <td className="py-3 text-sm text-muted-foreground">{new Date(record.borrow_date).toLocaleDateString()}</td>
-                    <td className="py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                          record.status === "borrowed"
-                            ? "bg-accent text-accent-foreground"
-                            : record.status === "returned"
-                            ? "bg-secondary text-secondary-foreground"
-                            : "bg-destructive/10 text-destructive"
-                        }`}
-                      >
-                        {record.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </CardContent>
       </Card>
     </div>

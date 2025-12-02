@@ -240,7 +240,7 @@ export const deleteCategory = (id) => {
   });
 };
 
-export const getReturnedBooks = () => {
+export const getReturns = () => {
   const token = localStorage.getItem("token");
   return request("/api/returns", { token });
 };
@@ -268,5 +268,39 @@ export const deleteReturn = (id) => {
   return request(`/api/returns/${id}`, {
     method: "DELETE",
     token,
+  });
+};
+
+/** ===================== RETURN DETAILS ===================== */
+
+export const getReturnDetails = () => {
+  const token = localStorage.getItem("token");
+  return request("/api/return-details", { token });
+};
+
+export const addReturnDetail = (detail) => {
+  const token = localStorage.getItem("token");
+  return request("/api/return-details", {
+    method: "POST",
+    token,
+    body: JSON.stringify(detail),
+  });
+};
+
+export const updateReturnDetail = (id, detail) => {
+  const token = localStorage.getItem("token");
+  return request(`/api/return-details/${id}`, {
+    method: "PUT",
+    token,
+    body: JSON.stringify(detail),
+  });
+};
+
+export const deleteReturnDetail = (id, book_id) => {
+  const token = localStorage.getItem("token");
+  return request(`/api/return-details/${id}`, {
+    method: "DELETE",
+    token,
+    body: JSON.stringify({ book_id }), // ส่ง book_id ด้วยถ้า API ต้องการ
   });
 };
